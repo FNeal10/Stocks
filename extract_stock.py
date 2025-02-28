@@ -38,4 +38,4 @@ def main():
         driver.quit()  # Ensure the browser is closed after execution
 
 if __name__ == "__main__":
-    main()
+    main() 
