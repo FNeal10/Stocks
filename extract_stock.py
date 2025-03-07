@@ -1,6 +1,9 @@
 import os
 import git
+
+import pandas as pd
 from time import sleep
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,6 +17,51 @@ url = "https://www.pse.com.ph/company-information-BDO/"
 # Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait_time = WebDriverWait(driver, 20)
+
+def get_stocks_list():
+    data = pd.read_csv("stocks_list.csv")
+    return data
+
+def update_history(code: str, data: list):
+    history = pd.read_csv(f"History/{code}.csv")
+    new_data = pd.DataFrame([data], columns=history.columns)
+    
+    new_data = pd.concat([new_data, history], ignore_index=True)
+    new_data.to_csv(f"History/{code}.csv", index=False)  
+
+def push_to_giDt(file: str):
+    repo = git.Repo("https://github.com/FNeal10/Stocks")
+    repo.index.add(file)
+    repo.index.commit(f"Updated {file}")
+    origin = repo.remotes.origin
+    origin.push('main') 
+
+    import git
+
+def push_to_git(file: str, repo_path: str, commit_message: str = "Updated the file"):
+    try:
+        # Open the local Git repository
+        repo = git.Repo(repo_path)
+        
+        # Check if there are uncommitted changes
+        #if repo.is_dirty(untracked_files=True):
+        #    print("Changes detected. Proceeding with commit and push.")
+        #else:
+        #    print("No changes detected.")
+        #    return  # Exit if there are no changes
+
+        # Stage the file for commit
+        repo.git.add([file])
+
+        # Commit the changes
+        repo.index.commit(commit_message)
+
+        # Push the changes to the remote repository (replace 'main' with your branch if needed)
+        origin = repo.remotes.origin
+        origin.push('main')  # Replace 'main' with your branch name if it's different
+        print(f"Changes pushed to the remote repository: {commit_message}")
+    except Exception as e:
+        print(e) 
 
 def get_open_price():
 
@@ -39,30 +87,38 @@ def get_volume():
 def main():
     try:
         print("Start")
-        driver.get(url)
+        current_date = datetime.now().strftime('%m/%d/%Y')
 
-        iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
-        driver.switch_to.frame(iframe)
-        
-        openPrice = get_open_price()
-        highPrice = get_high_price()
-        lowPrice = get_low_price()
-        closePrice = get_close_price()
-        volume = get_volume()
+        data = get_stocks_list()
+        for _, d in data.iterrows():
+            company = d.CODE
+            url = d.URL
+            
+            print(f"Processing {company}")
+            driver.get(url)
 
+            iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
+            driver.switch_to.frame(iframe)
+            
+            openPrice = get_open_price()
+            highPrice = get_high_price()
+            lowPrice = get_low_price()
+            closePrice = get_close_price()
+            volume = get_volume()
 
-        # Extract and print text
-        print("Open Price:", openPrice)
-        print("High Price:", highPrice)
-        print("Low Price:", lowPrice)
-        print("Close Price:", closePrice)
-        print("Volume:", volume)
+            print("Upadating history")
+            update_history(company,[current_date, openPrice, highPrice, lowPrice,
+                                    closePrice, volume])
 
+            print("Pushing to Git")
+            push_to_git(f"{company}.csv", r"C:\Users\faltares\Documents\DEV\Stocks\History", f"Updated {company}")
+            
+            sleep(5)
     except Exception as e:
         print("Error:", e)
 
     finally:
-        driver.quit()  # Ensure the browser is closed after execution
+        driver.quit()
 
 if __name__ == "__main__":
-    main() 
+   main()
