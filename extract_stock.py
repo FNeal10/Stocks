@@ -1,4 +1,4 @@
-import pandas as pd
+import os
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -40,15 +40,8 @@ def main():
         print("Start")
         driver.get(url)
 
-        
         iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
         driver.switch_to.frame(iframe)
-
-        # Corrected: Waiting for the element to be present
-        #price_element = wait_time.until(
-        #    EC.presence_of_element_located((By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[1]/div[1]/h3"))
-        #)
-
         
         openPrice = get_open_price()
         highPrice = get_high_price()
