@@ -14,6 +14,27 @@ url = "https://www.pse.com.ph/company-information-BDO/"
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait_time = WebDriverWait(driver, 20)
 
+def get_open_price():
+
+    openPriceElement = driver.find_element(By.XPATH,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[4]")
+    return openPriceElement.text
+
+def get_high_price():
+    highPriceElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[2]/td[4]")
+    return highPriceElement.text
+
+def get_low_price():
+    lowPriceElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[4]")
+    return lowPriceElement.text
+
+def get_close_price():
+    closeElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[6]")
+    return closeElement.text
+
+def get_volume():
+    volumeElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[2]")
+    return volumeElement.text
+
 def main():
     try:
         print("Start")
@@ -24,12 +45,24 @@ def main():
         driver.switch_to.frame(iframe)
 
         # Corrected: Waiting for the element to be present
-        price_element = wait_time.until(
-            EC.presence_of_element_located((By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[1]/div[1]/h3"))
-        )
+        #price_element = wait_time.until(
+        #    EC.presence_of_element_located((By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[1]/div[1]/h3"))
+        #)
+
+        
+        openPrice = get_open_price()
+        highPrice = get_high_price()
+        lowPrice = get_low_price()
+        closePrice = get_close_price()
+        volume = get_volume()
+
 
         # Extract and print text
-        print("Stock Price:", price_element.text)
+        print("Open Price:", openPrice)
+        print("High Price:", highPrice)
+        print("Low Price:", lowPrice)
+        print("Close Price:", closePrice)
+        print("Volume:", volume)
 
     except Exception as e:
         print("Error:", e)
