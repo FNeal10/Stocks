@@ -113,7 +113,7 @@ def main():
             print("Pushing to Git")
             push_to_git(f"{company}.csv", r"C:\Users\faltares\Documents\DEV\Stocks\History", f"Updated {company}")
             
-            sleep(5)
+            sleep(2)
     except Exception as e:
         print("Error:", e)
 
