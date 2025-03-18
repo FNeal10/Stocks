@@ -17,13 +17,6 @@ def get_stocks_list():
     data = get_urls()
     return data
 
-def update_history(company: str, data: list):
-    history = pd.read_csv(f"History/{company}.csv")
-    new_data = pd.DataFrame([data], columns=history.columns)
-    
-    new_data = pd.concat([new_data, history], ignore_index=True)
-    new_data.to_csv(f"History/{company}.csv", index=False)  
-
 
 def get_open_price():
 
