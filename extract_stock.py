@@ -17,7 +17,7 @@ log_dir = "logs"
 log_filename = os.path.join(log_dir, f"log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
 logging.basicConfig(
     filename=log_filename,
-    level=logging.ERROR,
+    level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
@@ -45,6 +45,18 @@ def get_close_price():
 def get_volume():
     volumeElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[2]")
     return volumeElement.text
+
+
+def init_driver():
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless--')
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    return driver
+
+def extract_stock_prices(driver, company, xpath):
+    element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
+    return element.text.replace('"','').strip()
 
 def main():
     try:
