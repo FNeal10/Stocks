@@ -36,7 +36,5 @@ def update_history(company: str, new_data: list):
    updated_blob_data = df.to_csv(index=False).encode('utf-8')
    blob_client.upload_blob(updated_blob_data, overwrite=True)
 
-   print(f"Done processing for {company}")
-
     
 

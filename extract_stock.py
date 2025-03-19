@@ -1,4 +1,4 @@
-import pandas as pd
+import logging
 
 from read_from_blob import *
 from time import sleep
@@ -13,13 +13,20 @@ from webdriver_manager.chrome import ChromeDriverManager
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait_time = WebDriverWait(driver, 20)
 
+log_dir = "logs"
+log_filename = os.path.join(log_dir, f"log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 def get_stocks_list():
     data = get_urls()
     return data
 
 
 def get_open_price():
-
     openPriceElement = driver.find_element(By.XPATH,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[4]")
     return openPriceElement.text
 
@@ -41,36 +48,43 @@ def get_volume():
 
 def main():
     try:
-        print("Start")
+        logging.info(f"Starting application.....") 
         current_date = datetime.now().strftime('%m/%d/%Y')
 
         data = get_stocks_list()
         for _, d in data.iterrows():
-            company = d.CODE
-            url = d.URL
-            
-            print(f"Processing {company}")
-            driver.get(url)
+            try:
+                company = d.CODE
+                url = d.URL
+                
+                logging.info(f"Processing {company}")
+                driver.get(url)
 
-            iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
-            driver.switch_to.frame(iframe)
-            
-            openPrice = get_open_price()
-            highPrice = get_high_price()
-            lowPrice = get_low_price()
-            closePrice = get_close_price()
-            volume = get_volume()
+                iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
+                driver.switch_to.frame(iframe)
+                
+                openPrice = get_open_price()
+                highPrice = get_high_price()
+                lowPrice = get_low_price()
+                closePrice = get_close_price()
+                volume = get_volume()
 
-            print(f"Updating records for {company}")
-            update_history(company,[current_date, openPrice, highPrice, lowPrice,
-                                    closePrice, volume])
+                logging.info(f"Updating records for {company}")
+                update_history(company,[current_date, openPrice, highPrice, lowPrice,
+                                        closePrice, volume])
+                
+                sleep(2)
             
-            sleep(2)
+            except Exception as e:
+                logging.error(f"Error processing {company}: {e}") 
+                continue        
+
     except Exception as e:
-        print("Error:", e)
+        logging.fatal(f"Critical encountered when processing {company}: {e}") 
 
     finally:
         driver.quit()
 
 if __name__ == "__main__":
+    os.makedirs(log_dir,exist_ok=True)
     main()
