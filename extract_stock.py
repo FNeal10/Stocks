@@ -14,8 +14,8 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait_time = WebDriverWait(driver, 20)
 
 log_dir = "logs"
-os.makedirs(log_dir, exist_ok=True)
 log_filename = os.path.join(log_dir, f"log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
     filename=log_filename,
     level=logging.DEBUG,
@@ -57,8 +57,8 @@ def process_stock(driver, company, url):
     
         sleep(5)
 
-    except Exception as ex:
-        logging.fatal(f"Error in processing {company} - {ex}")
+    except Exception as e:
+        logging.fatal(f"Error in processing {company} - {e}")
 
 def main():
     try:
