@@ -14,6 +14,7 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait_time = WebDriverWait(driver, 20)
 
 log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
 log_filename = os.path.join(log_dir, f"log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
 logging.basicConfig(
     filename=log_filename,
@@ -21,82 +22,57 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def get_stocks_list():
-    data = get_urls()
-    return data
-
-
-def get_open_price():
-    openPriceElement = driver.find_element(By.XPATH,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[4]")
-    return openPriceElement.text
-
-def get_high_price():
-    highPriceElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[2]/td[4]")
-    return highPriceElement.text
-
-def get_low_price():
-    lowPriceElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[4]")
-    return lowPriceElement.text
-
-def get_close_price():
-    closeElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[6]")
-    return closeElement.text
-
-def get_volume():
-    volumeElement = driver.find_element(By.XPATH, "/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[2]")
-    return volumeElement.text
-
 
 def init_driver():
     options = webdriver.ChromeOptions()
     options.add_argument('--headless--')
-
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     return driver
 
-def extract_stock_prices(driver, company, xpath):
+def extract_stock_prices(driver, xpath):
     element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
     return element.text.replace('"','').strip()
+
+def process_stock(driver, company, url):
+    try:
+        driver.get(url)
+        iFrame = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "company_infos"))
+        )
+        driver.switch_to.frame(iFrame)
+
+        stock_data = {
+            "open": extract_stock_prices(driver,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[4]"),
+            "high": extract_stock_prices(driver,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[2]/td[4]"),
+            "low": extract_stock_prices(driver,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[4]"),
+            "close": extract_stock_prices(driver,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[1]/td[6]"),
+            "volume": extract_stock_prices(driver,"/html/body/div/div/div/div[3]/div[1]/div/div[3]/table/tbody/tr[3]/td[2]")
+        }
+
+        if None in stock_data.values():
+            return
+        
+        update_history(company,[datetime.now().strftime("%m/%d/%Y"), stock_data["open"], stock_data["high"],
+                       stock_data["low"], stock_data["close"], stock_data["volume"]])
+    
+        sleep(5)
+
+    except Exception as ex:
+        logging.fatal(f"Error in processing {company} - {ex}")
 
 def main():
     try:
         logging.info(f"Starting application.....") 
-        current_date = datetime.now().strftime('%m/%d/%Y')
 
-        data = get_stocks_list()
-        for _, d in data.iterrows():
-            try:
-                company = d.CODE
-                url = d.URL
-                
-                logging.info(f"Processing {company}")
-                driver.get(url)
-
-                iframe = wait_time.until(EC.presence_of_element_located((By.ID, "company_infos")))
-                driver.switch_to.frame(iframe)
-                
-                openPrice = get_open_price()
-                highPrice = get_high_price()
-                lowPrice = get_low_price()
-                closePrice = get_close_price()
-                volume = get_volume()
-
-                logging.info(f"Updating records for {company}")
-                update_history(company,[current_date, openPrice, highPrice, lowPrice,
-                                        closePrice, volume])
-                
-                sleep(2)
-            
-            except Exception as e:
-                logging.error(f"Error processing {company}: {e}") 
-                continue        
+        data = get_urls()
+        for _, stock in data.iterrows():
+            process_stock(driver, stock.CODE, stock.URL)
 
     except Exception as e:
-        logging.fatal(f"Critical encountered when processing {company}: {e}") 
+        logging.fatal(f"Critical error encountered {e}") 
 
     finally:
         driver.quit()
 
 if __name__ == "__main__":
-    os.makedirs(log_dir,exist_ok=True)
     main()
